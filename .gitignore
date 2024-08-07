@@ -1,0 +1,9 @@
+prompt*
+tmp_recordings/
+.venv/
+__pycache__/
+.gpteng/
+images/
+logs/
+run.sh
+Structure

@@ -1,0 +1,7 @@
+{
+    "image_style": "in the style of a watercolor painting",
+    "image_size": "1024x1024",
+    "default_font": "Arial",
+    "character_names": ["Alice", "Bob"],
+    "place_names": ["Wonderland", "Narnia"]
+}

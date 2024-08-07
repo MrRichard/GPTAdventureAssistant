@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Recording and Transcription</title>
+    <link rel="stylesheet" href="/static/styles/styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="static/favicon.ico">
+</head>
+<body>
+    <div class="container">
+        <div class="left-box">
+            <div id="story-text-box" class="story-text-box"></div>
+        </div>
+        <div class="right-box">
+            <div id="map-container" class="map-container"></div>
+        </div>
+        <div class="bottom-bar">
+            <button id="record-button">Record</button>
+            <button id="download-log-button">Download Log</button>
+            <input type="file" id="upload-map-input" accept="image/*">
+            <button id="upload-map-button">Upload Map</button>
+        </div>
+    </div>
+    <script src="/static/scripts/scripts.js"></script>
+</body>
+</html>

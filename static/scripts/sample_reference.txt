@@ -1,0 +1,58 @@
+
+
+First you need a proper function to send your data. Your initial fetch approach was close, but not perfect.
+
+Let's consider the function below. It takes in a Blob in the file parameter. This Blob will be created later in the answer. In the sendAudioFile function create a new FormData object. Append the Blob to the the formData.
+
+Now send the formData with the POST method to your server and use the body property for the formData.
+
+const sendAudioFile = file => {
+  const formData = new FormData();
+  formData.append('audio-file', file);
+  return fetch('http://localhost:3000/audioUpload', {
+    method: 'POST',
+    body: formData
+  });
+};
+
+Now to create your file you need to capture the recorded stream. Right now you are directly setting the recording to your audio element, but that’s not of any use for you to get the recorded data.
+
+Add an empty array inside the callback of getUserMedia and let’s call it data. This array will capture all the recorded data and use it to create a Blob.
+
+In the dataavailable event handler, push the e.data (which is the recorded data) to the data array.
+
+Add another event listener that listens for the stop event. Whenever the recording has stopped and all data is collected, create a Blob in the stop event callback. You can specify what the MIME type of the file is to tell it's format.
+
+Now you have your Blob with recorded data and can pass that to the sendAudioFile function which will send your Blob to the server.
+
+navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+  // Collection for recorded data.
+  let data = [];
+
+  // Recorder instance using the stream.
+  // Also set the stream as the src for the audio element.
+  const recorder = new MediaRecorder(stream);
+  audio.srcObject = stream;
+
+  recorder.addEventListener('start', e => {
+    // Empty the collection when starting recording.
+    data.length = 0;
+  });
+
+  recorder.addEventListener('dataavailable', event => {
+    // Push recorded data to collection.
+    data.push(event.data);
+  });
+
+  // Create a Blob when recording has stopped.
+  recorder.addEventListener('stop', () => {
+    const blob = new Blob(data, {
+      'type': 'audio/mp3'
+    });
+    sendAudioFile(blob);
+  });
+
+  // Start the recording.
+  recorder.start();
+});
+
