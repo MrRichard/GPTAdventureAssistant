@@ -200,11 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let now = new Date();
             let timestamp = now.toLocaleString(); // This gives a human-readable date and time
 
-            // Format the new text with the timestamp
-            let newText = `${timestamp} - ${transcription}\n`;
-
-            // Prepend the new text to the existing content of the storyTextBox
-            storyTextBox.innerText = newText + storyTextBox.innerText;
+            make_message_bubble(timestamp, transcription)
 
             // Call the delete_audio route to delete the tmp wav file used for this transcription
             formData = new FormData();
@@ -218,6 +214,85 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error:', error);
         }
+    }
+
+    function make_message_bubble(timestamp, transcription) { 
+        // Create a div to hold the new message bubble with the transcription
+        let messageBubble = document.createElement('div');
+        messageBubble.className = 'message-bubble';
+
+        // Create a span element to hold the timestamp
+        let timestampSpan = document.createElement('span');
+        timestampSpan.className = 'timestamp';
+        timestampSpan.textContent = `${timestamp}`;
+
+        // Create a p element to hold the transcription text
+        let transcriptionText = document.createElement('p');
+        transcriptionText.className = 'transcription-text';
+        transcriptionText.textContent = `${transcription}`;
+
+        // Create a button element to delete the message bubble
+        let deleteButton = document.createElement('button');
+        deleteButton.className = 'delete-button';
+        deleteButton.textContent = 'Delete';
+        deleteButton.addEventListener('click', () => {
+            messageBubble.remove();
+        });
+
+        // Create a button element to submit the transcription text
+        let submitButton = document.createElement('button');
+        submitButton.className = 'submit-button';
+        submitButton.textContent = 'I';
+        submitButton.addEventListener('click', async () => {
+            let formData = new FormData();
+            formData.append('text', transcription);
+        
+            try {
+                const response = await fetch('/generate_image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate image');
+                }
+
+                let imageData = await response.json();
+                console.log(response.json())
+
+                // Create an image element to display the generated image
+                const img = document.createElement('img');
+                img.src = imageData.image_path;
+                img.className = 'generated-image'
+                img.alt = 'Generated Image';
+
+                // Enable dragging functionality
+                makeImageDraggable(img);
+
+                // Create a span element to hold the transcription text below the image
+                const transcriptionSpan = document.createElement('span');
+                transcriptionSpan.className = 'transcription-text';
+                transcriptionSpan.style.fontStyle = 'italic';
+                transcriptionSpan.textContent = transcription;
+
+                // Append the generated image and transcription span to the message bubble
+                messageBubble.appendChild(img);
+                messageBubble.appendChild(transcriptionSpan);
+                messageBubble.removeChild(transcriptionText)
+                console.log('Image generated successfully with path:', imageData.file_path);
+                
+            } catch (error) {
+                console.error('Error generating image:', error);
+            }});
+
+        // Append the timestamp, transcription text, submit button, and delete button to the message bubble
+        messageBubble.appendChild(timestampSpan);
+        messageBubble.appendChild(transcriptionText);
+        messageBubble.appendChild(submitButton);
+        messageBubble.appendChild(deleteButton);
+
+        // Prepend the new message bubble to the existing content of the storyTextBox
+        storyTextBox.prepend(messageBubble);
     }
 
     function makeImageDraggable(img) {

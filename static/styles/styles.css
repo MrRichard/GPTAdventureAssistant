@@ -5,10 +5,11 @@ body {
 .container {
     display: flex;
     flex-direction: wrap;
-    height: 100vh;
+    height: 90vh;
 }
 
-.left-box, .right-box {
+.left-box,
+.right-box {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -47,8 +48,87 @@ body {
 }
 
 .map-container img {
-    position: absolute;
+    position: relative;
     cursor: grab;
-    max-width: none;
-    max-height: none;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.message-bubble {
+    padding: 20px;
+    border: 2px solid black;
+    background-color: #f5f5f5;
+    /* Very light gray background */
+    border-radius: 10px;
+    /* Optional: Adds rounded corners */
+    margin-bottom: 15px;
+    /* Adds space between message bubbles */
+}
+
+.message-bubble .timestamp {
+    font-size: 12px;
+    /* Smaller text size */
+    color: #FF4500;
+    /* Orange-red color */
+    display: block;
+    /* Ensure it starts on a new line */
+    margin-bottom: 10px;
+    /* Space between timestamp and next element */
+}
+
+.message-bubble .transcription-text,
+.message-bubble .generated-image {
+    display: block;
+    margin-bottom: 10px;
+    /* Space between elements **/
+}
+
+.message-bubble .transcription-text {
+    font-family: "Georgia", serif;
+    /* Example of a more "storybook" font */
+    font-size: 16px;
+    /* Ensures readability */
+    color: #333333;
+    /* Dark gray text for good readability */
+    line-height: 1.5;
+    /* Improves readability by increasing line spacing */
+}
+
+.message-bubble .generated-image {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    /* Responsive and maintains aspect ratio */
+}
+
+.message-bubble .submit-button,
+.message-bubble .delete-button {
+    font-size: 14px;
+    /* Make button text size appropriate */
+    padding: 5px 10px;
+    margin: 5px;
+    border-radius: 5px;
+    /* Rounded corners for buttons */
+    border: none;
+    /* Remove default border styling */
+    cursor: pointer;
+    /* Changes cursor to pointer on hover */
+    display: inline-block;
+}
+
+.message-bubble .submit-button {
+    background-color: #4CAF50;
+    /* Green background */
+    color: white;
+    /* White text color */
+}
+
+.message-bubble .delete-button {
+    background-color: #f44336;
+    /* Red background */
+    color: white;
+    /* White text color */
 }
