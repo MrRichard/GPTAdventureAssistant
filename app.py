@@ -4,8 +4,8 @@ import pathlib
 from flask_cors import CORS, cross_origin
 from routes import init_routes
 import os
-from werkzeug.utils import secure_filename
 from openai import OpenAI
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'tmp_recordings'

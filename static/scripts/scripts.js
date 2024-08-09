@@ -9,6 +9,99 @@ document.addEventListener('DOMContentLoaded', () => {
     let mediaRecorder; // we will assign MediaRecorder object to this
     let audioChunks = []; // array for storing the recorded audio data
 
+    function handleMapUpload() {
+        const file = uploadMapInput.files[0]; // Get the first (and presumably only) file from the input
+
+        if (!file) {
+            console.error("No file selected for upload.");
+            return;
+        }
+        
+        let formData = new FormData();
+        formData.append('map', file);
+
+        // Upload the map image to the server
+        fetch('/upload_map', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const uploadedFilePath = data.file_path; // Get the file path of the uploaded map image
+                const $mapContainer = $('#map-container');
+
+                const mapImage = $('<img>', {
+                    src: uploadedFilePath,
+                    css: {
+                        position: 'absolute',
+                        left: '0px',
+                        top: '0px',
+                        width: 'auto',
+                        height: 'auto'
+                    }
+                });
+
+                // Ensure the image loads properly before we append it
+                mapImage.on('load', function() {
+                    $mapContainer.empty(); // Clear any existing content
+                    $mapContainer.append(mapImage); // Append the new map image
+
+                    // Make the image draggable
+                    makeImageDraggable(this); // Pass the DOM element to makeImageDraggable
+                });
+
+                mapImage.on('error', function() {
+                    console.error("Failed to load the uploaded map image.");
+                });
+
+                // Reset the file input field
+                uploadMapInput.value = '';
+
+            } else {
+                console.error("Failed to upload the map image.");
+            }
+        })
+        .catch(error => {
+            console.error("An error occurred while uploading the map image:", error);
+        });
+    }
+
+    // Add the event listener for the upload map button
+    uploadMapButton.addEventListener('click', handleMapUpload);
+
+
+    /**
+     * Function to load the default map image into the mapContainer using jQuery.
+     * The image is loaded at its native resolution and scale.
+     */
+    function loadDefaultMap() {
+        const $mapContainer = $('#map-container');
+        const mapImage = $('<img>', {
+            src: '/static/images/maps/sample_map.png',
+            css: {
+                position: 'absolute',
+                left: '0px',
+                top: '0px',
+                width: 'auto',
+                height: 'auto'
+            }
+        });
+
+        // Ensure the image loads properly before we append it
+        mapImage.on('load', function() {
+            $mapContainer.empty(); // Clear any existing content
+            $mapContainer.append(mapImage); // Append the new map image
+
+            // Make the image draggable
+            makeImageDraggable(this); // Pass the DOM element to makeImageDraggable
+        });
+        mapImage.on('error', function() {
+            console.error("Failed to load the default map image.");
+        });
+    }
+
+
     recordButton.addEventListener('mousedown', () => {
         startRecording();
     });
@@ -131,6 +224,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let isDragging = false;
         let startX, startY, initialX, initialY;
 
+        // Prevent default image dragging behavior
+        img.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+        });
+
         img.addEventListener('mousedown', (e) => {
             isDragging = true;
             startX = e.clientX;
@@ -194,5 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Assuming you want to activate this function using a button with id 'download-button'
     downloadLogButton.addEventListener('click', downloadStoryBoxContent);
+
+    loadDefaultMap();
 
 });

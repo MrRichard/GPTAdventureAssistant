@@ -4,7 +4,7 @@ body {
 
 .container {
     display: flex;
-    flex-direction: column;
+    flex-direction: wrap;
     height: 100vh;
 }
 
@@ -18,12 +18,12 @@ body {
 }
 
 .left-box {
-    width: 70%;
+    width: 45%;
     border-right: 1px solid #ccc;
 }
 
 .right-box {
-    width: 30%;
+    width: 45%;
     background-color: #f0f0f0;
 }
 

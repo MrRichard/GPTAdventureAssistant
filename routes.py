@@ -1,6 +1,7 @@
 from flask import render_template, request, jsonify, send_from_directory
 from openai_client import OpenAIClient
 from file_manager import FileManager
+from werkzeug.utils import secure_filename
 import os
 
 def init_routes(app):
@@ -10,12 +11,6 @@ def init_routes(app):
     @app.route('/')
     def index():
         return render_template('index.html')
-
-    @app.route('/record', methods=['POST'])
-    def record():
-        audio_data = request.files['audio']
-        transcription = openai_client.transcribe_audio(audio_data)
-        return jsonify({'transcription': transcription})
 
     @app.route('/generate_image', methods=['POST'])
     def generate_image():
@@ -33,8 +28,25 @@ def init_routes(app):
     def download_log():
         return send_from_directory('logs', 'log.txt', as_attachment=True)
 
+    # Configure the allowed extensions for the uploaded files
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+    def allowed_file(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
     @app.route('/upload_map', methods=['POST'])
     def upload_map():
-        map_file = request.files['map']
-        file_path = file_manager.save_map(map_file)
-        return jsonify({'file_path': file_path})
+        if 'map' not in request.files:
+            return jsonify(success=False, error="No file part in the request"), 400
+
+        file = request.files['map']
+
+        if file.filename == '':
+            return jsonify(success=False, error="No selected file"), 400
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join('static/images/maps/', filename))
+            return jsonify(success=True, file_path=f'/static/images/maps/{filename}'), 200
+
+        return jsonify(success=False, error="Invalid file type"), 400
