@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let mediaRecorder; // we will assign MediaRecorder object to this
     let audioChunks = []; // array for storing the recorded audio data
 
+    // Track the current zoom level for the image
+    let zoomLevel = 1;
+    const ZOOM_STEP = 0.1; // Zoom increment step
+    const MAX_ZOOM = 3;    // Maximum zoom level
+    const MIN_ZOOM = 0.5;  // Minimum zoom level
+
     function handleMapUpload() {
         const file = uploadMapInput.files[0]; // Get the first (and presumably only) file from the input
 
@@ -16,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("No file selected for upload.");
             return;
         }
-        
+
         let formData = new FormData();
         formData.append('map', file);
 
@@ -25,51 +31,54 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const uploadedFilePath = data.file_path; // Get the file path of the uploaded map image
-                const $mapContainer = $('#map-container');
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const uploadedFilePath = data.file_path; // Get the file path of the uploaded map image
+                    const $mapContainer = $('#map-container');
 
-                const mapImage = $('<img>', {
-                    src: uploadedFilePath,
-                    css: {
-                        position: 'absolute',
-                        left: '0px',
-                        top: '0px',
-                        width: 'auto',
-                        height: 'auto'
-                    }
-                });
+                    const mapImage = $('<img>', {
+                        src: uploadedFilePath,
+                        css: {
+                            position: 'absolute',
+                            left: '0px',
+                            top: '0px',
+                            width: 'auto',
+                            height: 'auto',
+                            transform: `scale(${zoomLevel})` // Apply the initial zoom level
+                        }
+                    });
 
-                // Ensure the image loads properly before we append it
-                mapImage.on('load', function() {
-                    $mapContainer.empty(); // Clear any existing content
-                    $mapContainer.append(mapImage); // Append the new map image
+                    // Ensure the image loads properly before we append it
+                    mapImage.on('load', function () {
+                        $mapContainer.empty(); // Clear any existing content
+                        $mapContainer.append(mapImage); // Append the new map image
 
-                    // Make the image draggable
-                    makeImageDraggable(this); // Pass the DOM element to makeImageDraggable
-                });
+                        // Apply zoom functionality
+                        applyZoomFunctionality(mapImage[0]);
 
-                mapImage.on('error', function() {
-                    console.error("Failed to load the uploaded map image.");
-                });
+                        // Make the image draggable
+                        makeImageDraggable(this); // Pass the DOM element to makeImageDraggable
+                    });
 
-                // Reset the file input field
-                uploadMapInput.value = '';
+                    mapImage.on('error', function () {
+                        console.error("Failed to load the uploaded map image.");
+                    });
 
-            } else {
-                console.error("Failed to upload the map image.");
-            }
-        })
-        .catch(error => {
-            console.error("An error occurred while uploading the map image:", error);
-        });
+                    // Reset the file input field
+                    uploadMapInput.value = '';
+
+                } else {
+                    console.error("Failed to upload the map image.");
+                }
+            })
+            .catch(error => {
+                console.error("An error occurred while uploading the map image:", error);
+            });
     }
 
     // Add the event listener for the upload map button
     uploadMapButton.addEventListener('click', handleMapUpload);
-
 
     /**
      * Function to load the default map image into the mapContainer using jQuery.
@@ -84,22 +93,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 left: '0px',
                 top: '0px',
                 width: 'auto',
-                height: 'auto'
+                height: 'auto',
+                transform: `scale(${zoomLevel})` // Apply the initial zoom level
             }
         });
 
         // Ensure the image loads properly before we append it
-        mapImage.on('load', function() {
+        mapImage.on('load', function () {
             $mapContainer.empty(); // Clear any existing content
             $mapContainer.append(mapImage); // Append the new map image
+
+            // Apply zoom functionality
+            applyZoomFunctionality(mapImage[0]);
 
             // Make the image draggable
             makeImageDraggable(this); // Pass the DOM element to makeImageDraggable
         });
-        mapImage.on('error', function() {
+        mapImage.on('error', function () {
             console.error("Failed to load the default map image.");
         });
     }
+
+    /**
+     * Function to add zoom in and out functionality to the map image using the mouse wheel.
+     */
+    function applyZoomFunctionality(mapImage) {
+        mapImage.addEventListener('wheel', function (event) {
+            event.preventDefault();
+
+            if (event.deltaY < 0) {
+                // Zoom in
+                zoomLevel = Math.min(zoomLevel + ZOOM_STEP, MAX_ZOOM);
+            } else {
+                // Zoom out
+                zoomLevel = Math.max(zoomLevel - ZOOM_STEP, MIN_ZOOM);
+            }
+
+            mapImage.style.transform = `scale(${zoomLevel})`;
+        });
+    }
+
 
 
     recordButton.addEventListener('mousedown', () => {
@@ -216,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function make_message_bubble(timestamp, transcription) { 
+    function make_message_bubble(timestamp, transcription) {
         // Create a div to hold the new message bubble with the transcription
         let messageBubble = document.createElement('div');
         messageBubble.className = 'message-bubble';
@@ -246,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitButton.addEventListener('click', async () => {
             let formData = new FormData();
             formData.append('text', transcription);
-        
+
             try {
                 const response = await fetch('/generate_image', {
                     method: 'POST',
@@ -280,10 +313,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 messageBubble.appendChild(transcriptionSpan);
                 messageBubble.removeChild(transcriptionText)
                 console.log('Image generated successfully with path:', imageData.file_path);
-                
+
             } catch (error) {
                 console.error('Error generating image:', error);
-            }});
+            }
+        });
 
         // Append the timestamp, transcription text, submit button, and delete button to the message bubble
         messageBubble.appendChild(timestampSpan);
@@ -331,41 +365,48 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Function to download the content of the story-text box as an HTML file.
      */
-    function downloadStoryBoxContent() {
-        // Get the storyTextBox element by its id
+    async function downloadStoryBoxContent() {
         const storyTextBox = document.getElementById('story-text-box');
+        const zip = new JSZip();
 
-        // Create a new Blob containing the HTML content of the storyTextBox
-        const storyHtmlContent = new Blob([storyTextBox.innerHTML], {
-            type: 'text/html'
+        // Folder within the zip
+        const folder = zip.folder("story-text-box");
+
+        // Extract images and replace the src links
+        const imgElements = storyTextBox.getElementsByTagName('img');
+        for (let i = 0; i < imgElements.length; i++) {
+            let img = imgElements[i];
+            let imgSrc = img.src;
+            let imgName = `image${i}.png`;
+
+            // Fetch the image as a blob
+            const imgBlob = await fetch(imgSrc).then(r => r.blob());
+
+            // Add the image to the folder
+            folder.file(imgName, imgBlob);
+
+            // Update the image src attribute to the path relative to the ZIP structure
+            img.src = `./${imgName}`;
+        }
+
+        // Create a new Blob containing the modified HTML content of the storyTextBox
+        folder.file("story-text-box.html", storyTextBox.innerHTML, { type: 'text/html' });
+
+        // Generate the zip file and trigger the download
+        zip.generateAsync({ type: 'blob' }).then((content) => {
+            const zipBlobURL = URL.createObjectURL(content);
+
+            const downloadLink = document.createElement('a');
+            downloadLink.download = 'story-text-box.zip';
+            downloadLink.href = zipBlobURL;
+
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
         });
-
-        // Create a new URL for the Blob
-        const storyHtmlURL = URL.createObjectURL(storyHtmlContent);
-
-        // Create a new anchor element
-        const downloadLink = document.createElement('a');
-
-        // Set the download attribute with a filename
-        downloadLink.download = 'story-text-box.html';
-
-        // Set the href of the anchor to the Blob URL
-        downloadLink.href = storyHtmlURL;
-
-        // Append the anchor to the body (this is necessary for Firefox)
-        document.body.appendChild(downloadLink);
-
-        // Programmatically click the anchor to trigger the download
-        downloadLink.click();
-
-        // Remove the anchor from the DOM
-        document.body.removeChild(downloadLink);
-
-        // Revoke the Blob URL to free up resources
-        URL.revokeObjectURL(storyHtmlURL);
     }
 
-    // Assuming you want to activate this function using a button with id 'download-button'
+    // Assuming you want to activate this function using a button with id 'download-log-button'
     downloadLogButton.addEventListener('click', downloadStoryBoxContent);
 
     loadDefaultMap();

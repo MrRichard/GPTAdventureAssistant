@@ -69,7 +69,7 @@ def init_routes(app):
     @app.route('/delete_audio', methods=['POST'])
     def delete_audio():
         filename = request.form['file_path']
-        print(f"Deleting {filename}")
+        ##print(f"Deleting {filename}")
 
         if not filename.endswith('.wav'):
             return jsonify({'error': 'Invalid file format'}), 400
@@ -86,7 +86,7 @@ def init_routes(app):
         try:
             # Retrieve the file from the request using the key 'file'
             file = request.form['audio']
-            print(f"reading file: {file}")
+            #print(f"reading file: {file}")
 
             # Check if the filename is empty and raise an error if it is
             if file == '':
@@ -106,7 +106,7 @@ def init_routes(app):
                 response_format="json"
             )
         except e:
-            print("failing")
+            #("failing")
             return jsonify({'error': str(e)}), 500
 
         client=''
@@ -129,9 +129,9 @@ def init_routes(app):
         client = OpenAI(api_key = api_key)
         
         image_prompt = generate_prompt(app.config['image_context'], app.config['image_style'], transcription)
-        print(image_prompt)
+        #print(image_prompt)
         response = client.images.generate(
-            model="dall-e-2",
+            model="dall-e-3",
             prompt=image_prompt,
             size=app.config['image_size'],
             quality="standard",
@@ -158,8 +158,8 @@ def init_routes(app):
     def generate_prompt(image_context, image_style, transcription):
         prompt = (f"We are requesting a small accent image.\n\n"
                 f"Context: {image_context}\n"
-                f"Style: {image_style}\n"
-                f"Subject matter: {transcription}"
+                f"Style [IMPORTANT]: {image_style}\n"
+                f"Please take into account the Context and Style and render for this scene: {transcription}."
                 )
 
         return prompt
