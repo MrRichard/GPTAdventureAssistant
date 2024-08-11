@@ -9,6 +9,35 @@ import random
 import string
 
 def init_routes(app):
+    
+    @app.route('/api_key_confirm', methods=['GET'])
+    def api_key_confirm():
+        
+        api_key = app.config['OPENAI_API_KEY']
+        
+        if not api_key:
+            return jsonify({'error': 'API key is missing or empty'}), 400
+
+        # Try to initialize the OpenAI client
+        try:
+            client = OpenAI(api_key=api_key)
+            client.close()
+            return jsonify({'message': 'API key is valid'}), 200
+        except Exception as e:
+            return jsonify({'error': f'Failed to validate API key: {str(e)}'}), 400
+        
+    @app.route('/add_new_api_key', methods=['POST'])
+    def add_new_api_key():
+        try:
+            data = request.get_json()
+            api_key = data.get('api_key')
+            app.config['OPENAI_API_KEY'] = api_key
+            print(app.config['OPENAI_API_KEY'])
+            return jsonify({'success': True})
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+        
 
     @app.route('/')
     def index():
@@ -95,8 +124,7 @@ def init_routes(app):
         except Exception as e:
             return jsonify({'error': str(e)}), 400
 
-        api_key =  os.getenv('OPENAI_API_KEY', '')  
-        client = OpenAI(api_key = api_key)
+        client = OpenAI(api_key = app.config['OPENAI_API_KEY'])
         audio_file = open(file, "rb")
 
         try:
@@ -125,8 +153,7 @@ def init_routes(app):
         except Exception as e:
             return jsonify({'error': str(e)}), 400
         
-        api_key =  os.getenv('OPENAI_API_KEY', '')  
-        client = OpenAI(api_key = api_key)
+        client = OpenAI(api_key = app.config['OPENAI_API_KEY'])
         
         image_prompt = generate_prompt(app.config['image_context'], app.config['image_style'], transcription)
         #print(image_prompt)

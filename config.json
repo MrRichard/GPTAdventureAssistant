@@ -3,7 +3,7 @@
     "image_style": "black and white line contour illustration with warm paper background. the images should always be good representations with lots of details and nuance.",
     "image_size": "1024x1024",
     "default_font": "Arial",
-    "character_names": ["Alice", "Bob"],
-    "place_names": ["Wonderland", "Narnia"],
-    "UPLOAD_FOLDER" : "tmp_recordings"
+    "UPLOAD_FOLDER" : "tmp_recordings",
+    "IMAGE_STORAGE" : "output_images",
+    "LOG_STORAGE" : "story_logs"
 }

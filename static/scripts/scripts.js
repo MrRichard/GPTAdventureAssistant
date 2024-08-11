@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadLogButton = document.getElementById('download-log-button');
     const uploadMapInput = document.getElementById('upload-map-input');
     const uploadMapButton = document.getElementById('upload-map-button');
+    const clearMapButton = document.getElementById('clear-map-button');
     const storyTextBox = document.getElementById('story-text-box');
     const mapContainer = document.getElementById('map-container');
     const recordButton = document.getElementById('record-button');
@@ -14,6 +15,111 @@ document.addEventListener('DOMContentLoaded', () => {
     const ZOOM_STEP = 0.1; // Zoom increment step
     const MAX_ZOOM = 3;    // Maximum zoom level
     const MIN_ZOOM = 0.5;  // Minimum zoom level
+
+    // On load, validate that we have a functional Open AI key
+
+    fetch('/api_key_confirm', {
+        method: 'GET'
+    })
+    .then(response => {
+        if (!response.ok) {
+            showApiKeyWarning();
+            //disable record button
+            recordButton.disabled = true;
+            downloadLogButton.disabled=true;
+            
+        }
+        return response.json();
+    })
+    .catch(error => {
+        showApiKeyWarning();
+    });
+
+    function showApiKeyWarning() {
+        // Create a dialog box to warn the user
+        const dialog = document.createElement('div');
+        dialog.style.position = 'fixed';
+        dialog.style.top = '50%';
+        dialog.style.left = '50%';
+        dialog.style.transform = 'translate(-50%, -50%)';
+        dialog.style.padding = '20px';
+        dialog.style.backgroundColor = 'white';
+        dialog.style.border = '1px solid red';
+        dialog.style.zIndex = '1000'; // Ensure the dialog appears above other content
+
+        const message = document.createElement('p');
+        message.textContent = 'A valid OpenAI API key is required to use this application.\n';
+        dialog.appendChild(message);
+
+        // Create text box for API key input
+        const apiKeyInput = document.createElement('input');
+        apiKeyInput.type = 'text';
+        apiKeyInput.placeholder = 'Enter your OpenAI API key here';
+        dialog.appendChild(apiKeyInput);
+
+        // Create a submit button for the API key
+        const submitButton = document.createElement('button');
+        submitButton.textContent = 'Submit';
+        submitButton.addEventListener('click', () => {
+            const apiKey = apiKeyInput.value.trim();
+            if (apiKey) {
+                submitNewApiKey(apiKey, dialog);
+            } else {
+                showBadApiKeyMessage(dialog);
+            }
+        });
+        dialog.appendChild(submitButton);
+
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Close';
+        closeButton.addEventListener('click', () => {
+            document.body.removeChild(dialog);
+        });
+        dialog.appendChild(closeButton);
+
+        document.body.appendChild(dialog);
+    }
+
+    function showBadApiKeyMessage(dialog) {
+        const badMessage = document.createElement('p');
+        badMessage.textContent = 'Invalid API key. Please try again.';
+        badMessage.style.color = 'red';
+        dialog.appendChild(badMessage);
+    }
+
+    function submitNewApiKey(apiKey, dialog) {
+        fetch('/add_new_api_key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ api_key: apiKey })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to add new API key');
+            }
+            // Validate the new API key
+            return fetch('/api_key_confirm', {
+                method: 'GET'
+            });
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // If the API key is valid, close the dialog and enable features
+                document.body.removeChild(dialog);
+                recordButton.disabled = false;
+                downloadLogButton.disabled = false;
+            } else {
+                showBadApiKeyMessage(dialog);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showBadApiKeyMessage(dialog);
+        });
+    }
 
     function handleMapUpload() {
         const file = uploadMapInput.files[0]; // Get the first (and presumably only) file from the input
@@ -132,8 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mapImage.style.transform = `scale(${zoomLevel})`;
         });
     }
-
-
 
     recordButton.addEventListener('mousedown', () => {
         startRecording();
