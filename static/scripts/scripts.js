@@ -384,6 +384,48 @@ document.addEventListener('DOMContentLoaded', () => {
             messageBubble.remove();
         });
 
+        // Create a button to invoke the oracle
+        let oracleButton = document.createElement('button');
+        oracleButton.className = 'oracle-button';
+        oracleButton.textContent = 'Ask Oracle';
+
+        oracleButton.addEventListener('click', async () => {
+
+            let allTranscriptions = collectTranscriptions();
+
+            try {
+                // Send a POST request to the /oracle endpoint with the transcriptionText content
+                let response = await fetch('/oracle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        text: transcriptionText.textContent,
+                        context: allTranscriptions
+                     })
+                });
+        
+                // Check if the response is ok (HTTP status code 200-299)
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+        
+                // Parse the JSON response
+                let data = await response.json();
+                // Handle the response data (for now, just log it to the console)
+                let now = new Date();
+                let timestamp = now.toLocaleString();
+                make_message_bubble(timestamp, "The Oracle responds: " + data.response)
+        
+                // You can add more code here to update the UI or handle the result as needed
+        
+            } catch (error) {
+                // Handle errors
+                console.error('There was a problem with the fetch operation:', error);
+            }
+        });
+        
         // Create a button element to submit the transcription text
         let submitButton = document.createElement('button');
         submitButton.className = 'submit-button';
@@ -457,6 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageBubble.appendChild(timestampSpan);
         messageBubble.appendChild(transcriptionText);
         messageBubble.appendChild(submitButton);
+        messageBubble.appendChild(oracleButton);
         messageBubble.appendChild(deleteButton);
 
         // Prepend the new message bubble to the existing content of the storyTextBox
@@ -600,5 +643,33 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadLogButton.addEventListener('click', downloadStoryBoxContent);
 
     loadDefaultMap();
+
+    function collectTranscriptions() {
+        // Get all message bubble elements
+        const messageBubbles = document.querySelectorAll('.message-bubble');
+    
+        // Initialize a variable to hold the concatenated transcription texts
+        let allTranscriptions = '';
+    
+        // Check if there are more than one message bubbles
+        if (messageBubbles.length > 1) {
+            // Iterate over each message bubble starting from the second element (index 1)
+            for (let i = 1; i < messageBubbles.length; i++) {
+                // Get the current message bubble
+                const bubble = messageBubbles[i];
+                
+                // Get the child element with the class 'transcription-text'
+                const transcriptionElement = bubble.querySelector('.transcription-text');
+                
+                if (transcriptionElement) {
+                    // Append the text content of the transcription element to the allTranscriptions variable
+                    allTranscriptions += transcriptionElement.textContent + '\n';
+                }
+            }
+        }
+    
+        console.log(allTranscriptions);
+        return allTranscriptions;
+    }
 
 });

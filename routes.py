@@ -190,3 +190,57 @@ def init_routes(app):
                 )
 
         return prompt
+    
+    def ask_oracle(transcription, context):
+        roll = random.randint(1, 6)
+        responses = {
+            1: "No, and",
+            2: "No",
+            3: "No, but",
+            4: "Yes, but",
+            5: "Yes",
+            6: "Yes, and"
+        }
+        result = responses[roll]
+        context = (
+            "You are the story telling oracle. Mysterious and brief."
+            "When players come to you with a question, you roll the dice and give them a short answer that is often open for intepretation."
+            "Your responses are always guided by the roll of the dice. If you are not asked a question is unclear, politely refuse to respond to that question."
+            f"ALWAYS Include the dice roll of {roll} and use the response format \"{result}\" to guide your reponse. Limit responses to 5 lines max."
+            "IMPORTANT: It's important not give information that is not immediately observable, or give a reason why this information is known."
+            "Try to respond in the context of the story."
+        )
+        
+        prompt = (f"Answer based on the results of the oracle roll: {result}:\n"
+                  f"Answer this question: {transcription}"
+                  f"Take into account all recent messages (if any) included below:\n {context}"
+                  )
+        return context, prompt
+    
+    @app.route('/oracle', methods=['POST'])
+    def oracle():
+        try:
+            data = request.get_json()
+            transcription = data.get('text')
+            context = data.get('context')
+            
+            if not transcription:
+                raise ValueError("No transcription provided")
+            
+            context, prompt = ask_oracle(transcription, context)
+            
+            client = OpenAI(api_key=app.config['OPENAI_API_KEY'])
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role" : "system", "content" : context},
+                    {"role" : "user", "content" : prompt}
+                ]
+            )
+            reply = response.choices[0].message.content
+            print(reply)
+            
+            return jsonify({'response': reply}), 200
+        
+        except Exception as e:
+            return jsonify({'error': str(e)}), 400
