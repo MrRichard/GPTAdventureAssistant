@@ -18,7 +18,7 @@ This is a simple Flask learning project. It leverages OpenAI's API services to e
 
 1. Clone the repository:
     ```bash
-    git clone <repository_url>
+    git clone https://github.com/MrRichard/GPTAdventureAssistant.git
     ```
 2. Navigate to the project directory:
     ```bash
@@ -37,7 +37,7 @@ This is a simple Flask learning project. It leverages OpenAI's API services to e
 
 1. Clone the repository:
     ```bash
-    git clone <repository_url>
+    git clone https://github.com/MrRichard/GPTAdventureAssistant.git
     ```
 2. Navigate to the project directory:
     ```bash
@@ -60,4 +60,16 @@ Below is a sample image used in this project:
 
 ---
 
-Feel free to explore and contribute to the project! If you encounter any issues, please open an issue on GitHub.
+## How to customize
+To customize the prompts, you can adjust the `config.json` file.
+```json
+{
+    "image_context" : "Fantasy artwork for an old-school, first-edition, table-top role playing game",
+    "image_style": "black and white line contour illustration with warm paper background. the images should always be good representations with lots of details and nuance.",
+    "image_size": "1024x1024",
+    "default_font": "Arial",
+    "UPLOAD_FOLDER" : "tmp_recordings",
+    "IMAGE_STORAGE" : "output_images",
+    "LOG_STORAGE" : "story_logs"
+}
+```

@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadLogButton = document.getElementById('download-log-button');
     const uploadMapInput = document.getElementById('upload-map-input');
     const uploadMapButton = document.getElementById('upload-map-button');
-    const clearMapButton = document.getElementById('clear-map-button');
+    //const clearMapButton = document.getElementById('clear-map-button');
+    const insertTextButton = document.getElementById('insert-text-button');
     const storyTextBox = document.getElementById('story-text-box');
     const mapContainer = document.getElementById('map-container');
     const recordButton = document.getElementById('record-button');
@@ -17,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const MIN_ZOOM = 0.5;  // Minimum zoom level
 
     // On load, validate that we have a functional Open AI key
-
     fetch('/api_key_confirm', {
         method: 'GET'
     })
@@ -353,6 +353,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Function to remove all child elements of specific classes
+    function removeChildElementsByClass(parent, className) {
+        var elements = parent.querySelectorAll(`.${className}`);
+        elements.forEach(function(element) {
+            parent.removeChild(element);
+        });
+    }
+
     function make_message_bubble(timestamp, transcription) {
         // Create a div to hold the new message bubble with the transcription
         let messageBubble = document.createElement('div');
@@ -379,11 +387,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create a button element to submit the transcription text
         let submitButton = document.createElement('button');
         submitButton.className = 'submit-button';
-        submitButton.textContent = 'I';
+        submitButton.textContent = 'Generate Image';
         submitButton.addEventListener('click', async () => {
             let formData = new FormData();
             formData.append('text', transcription);
-
+            submitButton.textContent = 'Generating Image';
+            submitButton.disabled = true;
             try {
                 const response = await fetch('/generate_image', {
                     method: 'POST',
@@ -395,7 +404,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 let imageData = await response.json();
-                console.log(response.json())
+
+                // clean up previous image on regen
+                // Check if messageBubble contains any <img> elements
+                if (messageBubble.querySelector('img')) {
+                    console.log("Message bubble contains an image.");
+
+                    // Remove all child elements of class "generated-image"
+                    removeChildElementsByClass(messageBubble, 'generated-image');
+                    
+                    // Remove all child elements of class "transcription-text"
+                    removeChildElementsByClass(messageBubble, 'transcription-text');
+                }
 
                 // Create an image element to display the generated image
                 const img = document.createElement('img');
@@ -404,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 img.alt = 'Generated Image';
 
                 // Enable dragging functionality
-                makeImageDraggable(img);
+                //makeImageDraggable(img);
 
                 // Create a span element to hold the transcription text below the image
                 const transcriptionSpan = document.createElement('span');
@@ -412,13 +432,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 transcriptionSpan.style.fontStyle = 'italic';
                 transcriptionSpan.textContent = transcription;
 
+                // reactivate button 
+                submitButton.textContent = 'Regen Img';
+                submitButton.disabled = false;
+
                 // Append the generated image and transcription span to the message bubble
                 messageBubble.appendChild(img);
                 messageBubble.appendChild(transcriptionSpan);
-                messageBubble.removeChild(transcriptionText)
+
+                if (messageBubble.contains(transcriptionText)){
+                    messageBubble.removeChild(transcriptionText)
+                }
+
                 console.log('Image generated successfully with path:', imageData.file_path);
 
             } catch (error) {
+                submitButton.textContent = 'ERROR';
+                submitButton.disabled = true;
                 console.error('Error generating image:', error);
             }
         });
@@ -509,6 +539,62 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(downloadLink);
         });
     }
+
+    function showTextInputDialog() {
+        // Create a dialog box
+        const dialog = document.createElement('div');
+        dialog.style.position = 'fixed';
+        dialog.style.top = '50%';
+        dialog.style.left = '50%';
+        dialog.style.transform = 'translate(-50%, -50%)';
+        dialog.style.padding = '20px';
+        dialog.style.backgroundColor = 'white';
+        dialog.style.border = '1px solid black';
+        dialog.style.zIndex = '1000'; // Ensure the dialog appears above other content
+        dialog.style.minWidth = '200px';
+        dialog.style.minHeight = '300px';
+
+        const inputText = document.createElement('textarea');
+        inputText.placeholder = 'Enter your message here';
+        inputText.style.width='100%'
+        inputText.style.flex = '1';
+        dialog.appendChild(inputText);
+
+        setTimeout(() => inputText.focus(), 0); // Timeout to ensure dialog is in the DOM
+
+        const acceptButton = document.createElement('button');
+        acceptButton.textContent = 'Accept';
+        acceptButton.addEventListener('click', () => {
+            const message = inputText.value.trim();
+            if (message) {
+                /// Get the current date and time
+                let now = new Date();
+                let timestamp = now.toLocaleString(); // This gives a human-readable date and time
+                make_message_bubble(timestamp,message);
+                document.body.removeChild(dialog);
+            }
+        });
+        dialog.appendChild(acceptButton);
+
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'Cancel';
+        cancelButton.addEventListener('click', () => {
+            document.body.removeChild(dialog);
+        });
+        dialog.appendChild(cancelButton);
+
+        // Add keypress event listener to handle "Enter" key press
+        inputText.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent the default action of adding a new line
+                acceptButton.click(); // Trigger the accept button click event
+            }
+        });
+
+        document.body.appendChild(dialog);
+    }
+
+    insertTextButton.addEventListener('click', showTextInputDialog);
 
     // Assuming you want to activate this function using a button with id 'download-log-button'
     downloadLogButton.addEventListener('click', downloadStoryBoxContent);

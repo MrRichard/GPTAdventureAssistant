@@ -4,6 +4,7 @@ tmp_recordings/
 __pycache__/
 .gpteng/
 static/images/maps/
+static/images/saved_images/
 logs/
 run.sh
 Structure
