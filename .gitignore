@@ -3,7 +3,7 @@ tmp_recordings/
 .venv/
 __pycache__/
 .gpteng/
-images/
+static/images/maps/
 logs/
 run.sh
 Structure
