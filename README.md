@@ -57,6 +57,9 @@ This is a simple Flask learning project. It leverages OpenAI's API services to e
 Below is a sample image used in this project:
 
 ![Sample Image](static/images/sample_image.png)
+The sample image (left) is created by DALL-E.
+The sample map (right) was created by Watabou. More maps can be generated using amazing procedural map generation tools available at [itch.io](https://watabou.itch.io/).
+
 
 ---
 
