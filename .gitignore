@@ -5,6 +5,6 @@ __pycache__/
 .gpteng/
 static/images/maps/
 static/images/saved_images/
-logs/
+logs/*.json
 run.sh
 Structure

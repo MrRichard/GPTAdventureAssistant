@@ -13,6 +13,7 @@ This is a simple Flask learning project. It leverages OpenAI's API services to e
 ## Prerequisites
 
 - A valid OpenAI API Key.
+- Protip: On *nix machines, you can `export OPENAI_API_KEY=<your_key_here>` and avoid the warning message entirely.
 
 ## Installation and Running
 
@@ -65,14 +66,18 @@ The sample map (right) was created by Watabou. More maps can be generated using 
 
 ## How to customize
 To customize the prompts, you can adjust the `config.json` file.
+The CHARACTERS_FOLDERS and PLACES_FOLDERS will save details about people and places for future use in other prompts.
 ```json
 {
     "image_context" : "Fantasy artwork for an old-school, first-edition, table-top role playing game",
-    "image_style": "black and white line contour illustration with warm paper background. the images should always be good representations with lots of details and nuance.",
+    "image_style": "black and white line contour illustration with warm paper background. the images should always be good representations with lots of details and nuance. No text.",
     "image_size": "1024x1024",
     "default_font": "Arial",
     "UPLOAD_FOLDER" : "tmp_recordings",
-    "IMAGE_STORAGE" : "output_images",
-    "LOG_STORAGE" : "story_logs"
+    "LOG_STORAGE" : "story_logs",
+    "customizations" : {
+        "CHARACTERS_FOLDER" : ".characters",
+        "PLACES_FOLDER" : ".places"
+    }
 }
 ```

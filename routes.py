@@ -1,12 +1,13 @@
 from flask import render_template, request, jsonify, send_from_directory
 from openai import OpenAI
-#from file_manager import FileManager
 from werkzeug.utils import secure_filename
 import os
 import pathlib
 from urllib.request import urlretrieve
 import random
 import string
+import json
+from datetime import datetime
 
 def init_routes(app):
     
@@ -40,22 +41,18 @@ def init_routes(app):
         
 
     @app.route('/')
-    def index():
+    def render_page():
         return render_template('index.html')
-
-    # mark this for deprications
-    @app.route('/download_log', methods=['GET'])
-    def download_log():
-        return send_from_directory('logs', 'log.txt', as_attachment=True)
-
-    # Configure the allowed extensions for the uploaded files
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-    def allowed_file(filename):
-        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
     @app.route('/upload_map', methods=['POST'])
     def upload_map():
+        
+        # define this function in the scope fo this route
+        ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+        def allowed_file(filename):
+            return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        
+        
         if 'map' not in request.files:
             return jsonify(success=False, error="No file part in the request"), 400
 
@@ -109,8 +106,8 @@ def init_routes(app):
         else:
             return jsonify({'error': 'File does not exist'}), 404
 
-    @app.route('/proxy_openai', methods=['POST'])
-    def proxy_openai():
+    @app.route('/transcribe', methods=['POST'])
+    def transcript_audio_GPT():
 
         try:
             # Retrieve the file from the request using the key 'file'
@@ -139,8 +136,9 @@ def init_routes(app):
 
         client=''
         return jsonify({'text': transcription.text})
+        
     @app.route('/generate_image', methods=['POST'])
-    def generate_image():
+    def generate_image_GPT():
         
         try:
             # Retrieve the file from the request using the key 'file'
@@ -156,7 +154,7 @@ def init_routes(app):
         client = OpenAI(api_key = app.config['OPENAI_API_KEY'])
         
         image_prompt = generate_prompt(app.config['image_context'], app.config['image_style'], transcription)
-        #print(image_prompt)
+
         response = client.images.generate(
             model="dall-e-3",
             prompt=image_prompt,
@@ -191,23 +189,58 @@ def init_routes(app):
 
         return prompt
     
-    def ask_oracle():
-        roll = random.randint(1, 6)
-        responses = {
-            1: "No, and",
-            2: "No",
-            3: "No, but",
-            4: "Yes, but",
-            5: "Yes",
-            6: "Yes, and"
-        }
-        result = responses[roll]
-        return result
-    
     @app.route('/oracle', methods=['GET'])
     def oracle():
+        
+        def ask_oracle():
+            roll = random.randint(1, 6)
+            responses = {
+                1: "No, and",
+                2: "No",
+                3: "No, but",
+                4: "Yes, but",
+                5: "Yes",
+                6: "Yes, and"
+            }
+            result = responses[roll]
+            return result
+        
+        # Return response via Json to dialogue box
         try:
             reply = ask_oracle()
             return jsonify({'response': reply}), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 400
+        
+    LOG_FILE_PATH = app.config['LOG_FILE']
+    @app.route('/save_session', methods=['POST'])
+    def save_session():
+        print(f"Saving to {LOG_FILE_PATH}")
+        data = request.json
+        with open(LOG_FILE_PATH, 'w') as log_file:
+            json.dump(data, log_file)
+        return jsonify({'success': True})
+    
+    @app.route('/load_session', methods=['GET'])
+    def load_session():
+        if os.path.exists(LOG_FILE_PATH):
+            with open(LOG_FILE_PATH, 'r') as log_file:
+                data = json.load(log_file)
+            return jsonify({'success': True, 'data': data})
+        return jsonify({'success': False})
+
+    @app.route('/archive_session', methods=['POST'])
+    def archive_session():
+        if os.path.exists(LOG_FILE_PATH):
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            
+            # sorry I did it this way
+            os.rename(
+                LOG_FILE_PATH, 
+                os.path.join(
+                    os.path.dirname(LOG_FILE_PATH), 
+                    f'archive_{timestamp}.json')
+            )
+        return jsonify({'success': True})
+        
+    

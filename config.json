@@ -4,6 +4,9 @@
     "image_size": "1024x1024",
     "default_font": "Arial",
     "UPLOAD_FOLDER" : "tmp_recordings",
-    "IMAGE_STORAGE" : "output_images",
-    "LOG_STORAGE" : "story_logs"
+    "LOG_FILE" : "logs/current_log.json",
+    "customizations" : {
+        "CHARACTERS_FOLDER" : ".characters",
+        "PLACES_FOLDER" : ".places"
+    }
 }

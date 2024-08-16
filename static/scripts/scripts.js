@@ -19,21 +19,86 @@ document.addEventListener('DOMContentLoaded', () => {
     // On load, validate that we have a functional Open AI key
     fetch('/api_key_confirm', {
         method: 'GET'
-    })
-    .then(response => {
+    }).then(response => {
         if (!response.ok) {
             showApiKeyWarning();
-            //disable record button
             recordButton.disabled = true;
-            downloadLogButton.disabled=true;
-            
+            downloadLogButton.disabled = true;
+
         }
         return response.json();
-    })
-    .catch(error => {
+    }).catch(error => {
         showApiKeyWarning();
     });
 
+    // Load existing content if it exists
+    fetch('/load_session', { method: 'GET' })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSessionDialog();
+        } else {
+            loadDefaultMap(); // Continue with the default map load
+        }
+    })
+    .catch(error => {
+        console.error('Error checking for previous session:', error);
+        loadDefaultMap();
+    });
+
+    function showSessionDialog() {
+        const dialog = document.createElement('div');
+        dialog.style.position = 'fixed';
+        dialog.style.top = '50%';
+        dialog.style.left = '50%';
+        dialog.style.transform = 'translate(-50%, -50%)';
+        dialog.style.padding = '20px';
+        dialog.style.backgroundColor = 'white';
+        dialog.style.border = '1px solid black';
+        dialog.style.zIndex = '1000'; // Ensure the dialog appears above other content
+
+        const message = document.createElement('p');
+        message.textContent = 'A previous session was found. Would you like to continue or start a new session?';
+        dialog.appendChild(message);
+
+        const continueButton = document.createElement('button');
+        continueButton.textContent = 'Continue';
+        continueButton.addEventListener('click', () => {
+            loadSession();
+            document.body.removeChild(dialog);
+        });
+        dialog.appendChild(continueButton);
+
+        const newSessionButton = document.createElement('button');
+        newSessionButton.textContent = 'New Session';
+        newSessionButton.addEventListener('click', () => {
+            archiveSession().then(() => {
+                loadDefaultMap(); // Continue with the default map load
+                document.body.removeChild(dialog);
+            });
+        });
+        dialog.appendChild(newSessionButton);
+
+        document.body.appendChild(dialog);
+    }
+    
+    // Function to archive the existing session
+    function archiveSession() {
+        return fetch('/archive_session', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Session archived successfully.');
+                } else {
+                    console.error('Failed to archive session.');
+                }
+            })
+            .catch(error => {
+                console.error('Error archiving session:', error);
+            });
+    }
+
+    // If there is environmental variable called OPENAI_API_KEY, then throw up this warning
     function showApiKeyWarning() {
         // Create a dialog box to warn the user
         const dialog = document.createElement('div');
@@ -94,30 +159,30 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             body: JSON.stringify({ api_key: apiKey })
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to add new API key');
-            }
-            // Validate the new API key
-            return fetch('/api_key_confirm', {
-                method: 'GET'
-            });
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // If the API key is valid, close the dialog and enable features
-                document.body.removeChild(dialog);
-                recordButton.disabled = false;
-                downloadLogButton.disabled = false;
-            } else {
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to add new API key');
+                }
+                // Validate the new API key
+                return fetch('/api_key_confirm', {
+                    method: 'GET'
+                });
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // If the API key is valid, close the dialog and enable features
+                    document.body.removeChild(dialog);
+                    recordButton.disabled = false;
+                    downloadLogButton.disabled = false;
+                } else {
+                    showBadApiKeyMessage(dialog);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
                 showBadApiKeyMessage(dialog);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showBadApiKeyMessage(dialog);
-        });
+            });
     }
 
     function handleMapUpload() {
@@ -321,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const saved_file = await saveResponse.json();
             formData = new FormData();
             formData.append('audio', saved_file.file_path);
-            const uploadResponse = await fetch('/proxy_openai', {
+            const uploadResponse = await fetch('/transcribe', {
                 method: 'POST',
                 body: formData
             });
@@ -329,8 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Extract the transcription from the server response
             const transcriptionData = await uploadResponse.json();
             const transcription = transcriptionData.text;
-
-            console.log(transcription)
 
             /// Get the current date and time
             let now = new Date();
@@ -355,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to remove all child elements of specific classes
     function removeChildElementsByClass(parent, className) {
         var elements = parent.querySelectorAll(`.${className}`);
-        elements.forEach(function(element) {
+        elements.forEach(function (element) {
             parent.removeChild(element);
         });
     }
@@ -369,12 +432,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json'
                 }
             });
-    
+
             // Check if the response is ok (HTTP status code 200-299)
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
-    
+
             // Parse the JSON response
             let data = await response.json();
             // Handle the response data (for now, just log it to the console)
@@ -410,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(displayBox);
 
             //make_message_bubble(timestamp, "The Oracle responds: " + data.response)
-  
+
         } catch (error) {
             // Handle errors
             console.error('There was a problem with the fetch operation:', error);
@@ -418,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     oracleButton.addEventListener('click', consultOracle);
 
-    function make_message_bubble(timestamp, transcription) {
+    function make_message_bubble(timestamp, transcription, imagePath = null) {
         // Create a div to hold the new message bubble with the transcription
         let messageBubble = document.createElement('div');
         messageBubble.className = 'message-bubble';
@@ -440,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteButton.addEventListener('click', () => {
             messageBubble.remove();
         });
-        
+
         // Create a button element to submit the transcription text
         let submitButton = document.createElement('button');
         submitButton.className = 'submit-button';
@@ -462,14 +525,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let imageData = await response.json();
 
-                // clean up previous image on regen
                 // Check if messageBubble contains any <img> elements
                 if (messageBubble.querySelector('img')) {
                     console.log("Message bubble contains an image.");
 
                     // Remove all child elements of class "generated-image"
                     removeChildElementsByClass(messageBubble, 'generated-image');
-                    
+
                     // Remove all child elements of class "transcription-text"
                     removeChildElementsByClass(messageBubble, 'transcription-text');
                 }
@@ -479,9 +541,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 img.src = imageData.image_path;
                 img.className = 'generated-image'
                 img.alt = 'Generated Image';
-
-                // Enable dragging functionality
-                //makeImageDraggable(img);
 
                 // Create a span element to hold the transcription text below the image
                 const transcriptionSpan = document.createElement('span');
@@ -497,7 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 messageBubble.appendChild(img);
                 messageBubble.appendChild(transcriptionSpan);
 
-                if (messageBubble.contains(transcriptionText)){
+                if (messageBubble.contains(transcriptionText)) {
                     messageBubble.removeChild(transcriptionText)
                 }
 
@@ -516,8 +575,60 @@ document.addEventListener('DOMContentLoaded', () => {
         messageBubble.appendChild(submitButton);
         messageBubble.appendChild(deleteButton);
 
+        if (imagePath) {
+            const img = document.createElement('img');
+            img.src = imagePath;
+            img.className = 'generated-image';
+            img.alt = 'Generated Image';
+            messageBubble.appendChild(img);
+        }
+
         // Prepend the new message bubble to the existing content of the storyTextBox
         storyTextBox.prepend(messageBubble);
+
+        // After creating the message bubble and appending it to the storyTextBox
+        saveSession();  // Call this function to save the session data to the server
+    }
+
+    function saveSession() {
+        let bubbles = document.querySelectorAll('.message-bubble');
+        let sessionData = Array.from(bubbles).map(bubble => {
+            return {
+                timestamp: bubble.querySelector('.timestamp').textContent,
+                transcription: bubble.querySelector('.transcription-text').textContent,
+                imagePath: bubble.querySelector('.generated-image') ? bubble.querySelector('.generated-image').src : null
+            };
+        });
+
+        console.log(bubbles)
+        fetch('/save_session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(sessionData)
+        }).then(response => response.json()).then(data => {
+            if (data.success) {
+                console.log('Session saved successfully.');
+            }
+        }).catch(error => {
+            console.error('Error saving session:', error);
+        });
+    }
+
+    function loadSession() {
+        fetch('/load_session', {
+            method: 'GET'
+        }).then(response => response.json()).then(data => {
+            if (data.success && data.data) {
+                const sessionData = data.data;
+                sessionData.forEach(item => {
+                    make_message_bubble(item.timestamp, item.transcription, item.imagePath);
+                });
+            }
+        }).catch(error => {
+            console.error('Error loading session:', error);
+        });
     }
 
     function makeImageDraggable(img) {
@@ -613,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const inputText = document.createElement('textarea');
         inputText.placeholder = 'Enter your message here';
-        inputText.style.width='100%'
+        inputText.style.width = '100%'
         inputText.style.flex = '1';
         dialog.appendChild(inputText);
 
@@ -627,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 /// Get the current date and time
                 let now = new Date();
                 let timestamp = now.toLocaleString(); // This gives a human-readable date and time
-                make_message_bubble(timestamp,message);
+                make_message_bubble(timestamp, message);
                 document.body.removeChild(dialog);
             }
         });
