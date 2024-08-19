@@ -5,7 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const insertTextButton = document.getElementById('insert-text-button');
     const storyTextBox = document.getElementById('story-text-box');
     const recordButton = document.getElementById('record-button');
-    const oracleButton = document.getElementById('oracle-button')
+    const oracleButton = document.getElementById('oracle-button');
+    const characterButton = document.getElementById('create-npc-button')
 
     let mediaRecorder; // we will assign MediaRecorder object to this
     let audioChunks = []; // array for storing the recorded audio data
@@ -33,18 +34,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load existing content if it exists
     fetch('/load_session', { method: 'GET' })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showSessionDialog();
-        } else {
-            loadDefaultMap(); // Continue with the default map load
-        }
-    })
-    .catch(error => {
-        console.error('Error checking for previous session:', error);
-        loadDefaultMap();
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSessionDialog();
+            } else {
+                loadDefaultMap(); // Continue with the default map load
+            }
+        })
+        .catch(error => {
+            console.error('Error checking for previous session:', error);
+            loadDefaultMap();
+        });
 
     function showSessionDialog() {
         const dialog = document.createElement('div');
@@ -81,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.body.appendChild(dialog);
     }
-    
+
     // Function to archive the existing session
     function archiveSession() {
         return fetch('/archive_session', { method: 'POST' })
@@ -481,10 +482,29 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     oracleButton.addEventListener('click', consultOracle);
 
-    function make_message_bubble(timestamp, transcription, imagePath = null) {
+    function make_message_bubble(timestamp, transcription, imagePath = null, hidden = false) {
         // Create a div to hold the new message bubble with the transcription
         let messageBubble = document.createElement('div');
         messageBubble.className = 'message-bubble';
+
+        // Function to hide message content
+        function hideContent() {
+            // Hide all children except the reveal button
+            for (const child of messageBubble.children) {
+                if (child.className !== 'reveal-button') {
+                    child.style.display = 'none';
+                } else {
+                    child.style.display = 'block';
+                }
+            }
+        }
+
+        // Function to show message content
+        function showContent() {
+            for (const child of messageBubble.children) {
+                child.style.display = 'block';
+            }
+        }
 
         // Create a span element to hold the timestamp
         let timestampSpan = document.createElement('span');
@@ -504,76 +524,28 @@ document.addEventListener('DOMContentLoaded', () => {
             messageBubble.remove();
         });
 
-        // Create a button element to submit the transcription text
-        let submitButton = document.createElement('button');
-        submitButton.className = 'submit-button';
-        submitButton.textContent = 'Generate Image';
-        submitButton.addEventListener('click', async () => {
-            let formData = new FormData();
-            formData.append('text', transcription);
-            submitButton.textContent = 'Generating Image';
-            submitButton.disabled = true;
-            try {
-                const response = await fetch('/generate_image', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to generate image');
-                }
-
-                let imageData = await response.json();
-
-                // Check if messageBubble contains any <img> elements
-                if (messageBubble.querySelector('img')) {
-                    console.log("Message bubble contains an image.");
-
-                    // Remove all child elements of class "generated-image"
-                    removeChildElementsByClass(messageBubble, 'generated-image');
-
-                    // Remove all child elements of class "transcription-text"
-                    removeChildElementsByClass(messageBubble, 'transcription-text');
-                }
-
-                // Create an image element to display the generated image
-                const img = document.createElement('img');
-                img.src = imageData.image_path;
-                img.className = 'generated-image'
-                img.alt = 'Generated Image';
-
-                // Create a span element to hold the transcription text below the image
-                const transcriptionSpan = document.createElement('span');
-                transcriptionSpan.className = 'transcription-text';
-                transcriptionSpan.style.fontStyle = 'italic';
-                transcriptionSpan.textContent = transcription;
-
-                // reactivate button 
-                submitButton.textContent = 'Regen Img';
-                submitButton.disabled = false;
-
-                // Append the generated image and transcription span to the message bubble
-                messageBubble.appendChild(img);
-                messageBubble.appendChild(transcriptionSpan);
-
-                if (messageBubble.contains(transcriptionText)) {
-                    messageBubble.removeChild(transcriptionText)
-                }
-
-                console.log('Image generated successfully with path:', imageData.file_path);
-
-            } catch (error) {
-                submitButton.textContent = 'ERROR';
-                submitButton.disabled = true;
-                console.error('Error generating image:', error);
+        // Create a button element to reveal or hide the content
+        let revealButton = document.createElement('button');
+        revealButton.className = 'reveal-button';
+        revealButton.textContent = 'Reveal Secret';
+        revealButton.addEventListener('click', () => {
+            if (revealButton.textContent === 'Reveal Secret') {
+                showContent();
+                revealButton.textContent = 'Hide Secret';
+            } else {
+                hideContent();
+                revealButton.textContent = 'Reveal Secret';
             }
         });
 
-        // Append the timestamp, transcription text, submit button, and delete button to the message bubble
+        // Append the timestamp, transcription text, and delete button to the message bubble
         messageBubble.appendChild(timestampSpan);
         messageBubble.appendChild(transcriptionText);
-        messageBubble.appendChild(submitButton);
         messageBubble.appendChild(deleteButton);
+
+        if (hidden) {
+            messageBubble.appendChild(revealButton);
+        }
 
         if (imagePath) {
             const img = document.createElement('img');
@@ -583,12 +555,102 @@ document.addEventListener('DOMContentLoaded', () => {
             messageBubble.appendChild(img);
         }
 
+        if (!hidden) {
+            // Create a button element to submit the transcription text
+            let submitButton = document.createElement('button');
+            submitButton.className = 'submit-button';
+
+            if (imagePath) {
+                submitButton.textContent = 'Regen Image';
+            } else {
+                submitButton.textContent = 'Generate Image';
+            }
+            submitButton.addEventListener('click', async () => {
+                let formData = new FormData();
+                formData.append('text', transcription);
+                submitButton.textContent = 'Generating Image';
+                submitButton.disabled = true;
+                try {
+                    const response = await fetch('/generate_image', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to generate image');
+                    }
+
+                    let imageData = await response.json();
+
+                    // Check if messageBubble contains any <img> elements
+                    if (messageBubble.querySelector('img')) {
+                        console.log("Message bubble contains an image.");
+
+                        // Remove all child elements of class "generated-image"
+                        removeChildElementsByClass(messageBubble, 'generated-image');
+
+                        // Remove all child elements of class "transcription-text"
+                        removeChildElementsByClass(messageBubble, 'transcription-text');
+                    }
+
+                    // Create an image element to display the generated image
+                    const img = document.createElement('img');
+                    img.src = imageData.image_path;
+                    img.className = 'generated-image';
+                    img.alt = 'Generated Image';
+
+                    // Create a span element to hold the transcription text below the image
+                    const transcriptionSpan = document.createElement('span');
+                    transcriptionSpan.className = 'transcription-text';
+                    transcriptionSpan.style.fontStyle = 'italic';
+                    transcriptionSpan.textContent = transcription;
+
+                    // Reactivate button 
+                    submitButton.textContent = 'Regen Img';
+                    submitButton.disabled = false;
+
+                    // Append the generated image and transcription span to the message bubble
+                    messageBubble.appendChild(img);
+                    messageBubble.appendChild(transcriptionSpan);
+
+                    if (messageBubble.contains(transcriptionText)) {
+                        messageBubble.removeChild(transcriptionText);
+                    }
+
+                    console.log('Image generated successfully with path:', imageData.file_path);
+
+                } catch (error) {
+                    submitButton.textContent = 'ERROR';
+                    submitButton.disabled = true;
+                    console.error('Error generating image:', error);
+                }
+            });
+
+            // Append the submitButton only if not hidden
+            messageBubble.appendChild(submitButton);
+        }
+
         // Prepend the new message bubble to the existing content of the storyTextBox
         storyTextBox.prepend(messageBubble);
+
+        // Initially hide content if hidden is true
+        if (hidden) {
+            revealButton.textContent = 'Reveal Secret';
+            hideContent();
+        }
 
         // After creating the message bubble and appending it to the storyTextBox
         saveSession();  // Call this function to save the session data to the server
     }
+
+    // Helper function to remove child elements of a specific class
+    function removeChildElementsByClass(parentElement, className) {
+        let elements = parentElement.getElementsByClassName(className);
+        while (elements.length > 0) {
+            elements[0].parentNode.removeChild(elements[0]);
+        }
+    }
+
 
     function saveSession() {
         let bubbles = document.querySelectorAll('.message-bubble');
@@ -600,7 +662,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        console.log(bubbles)
         fetch('/save_session', {
             method: 'POST',
             headers: {
@@ -768,5 +829,48 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadLogButton.addEventListener('click', downloadStoryBoxContent);
 
     loadDefaultMap();
+
+    // Function to handle character generation on button click
+    async function generateCharacter() {
+
+        let now = new Date();
+        let timestamp = now.toLocaleString();
+
+        try {
+            const response = await fetch('/character_generate', { method: 'GET' });
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+            const { physical_description, personality } = data;
+
+            // Generate an image based on the physical description by calling the /generate_image endpoint
+            let generatedImagePath;
+            let formData = new FormData();
+            formData.append('text', physical_description);
+            try {
+                const imageResponse = await fetch('/generate_image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                let imageData = await imageResponse.json();
+                generatedImagePath = imageData.image_path; // Assuming the response contains the image path
+                console.log(generatedImagePath)
+            } catch (imageError) {
+                // https://celebsonsandwiches.com/products/dr-steve-brule
+                generatedImagePath = 'static/images/dr_brule.jpg'; // Fallback image path
+            }
+            
+            make_message_bubble(timestamp, personality, '', true);
+            make_message_bubble(timestamp, physical_description, generatedImagePath, false);
+        } catch (error) {
+            console.error('Failed to generate character:', error);
+            generatedImagePath = 'static/images/dr_brule.jpg';
+            make_message_bubble(timestamp, 'Failed to generate character, dude.', generatedImagePath, false);
+        }
+    }
+    characterButton.addEventListener('click', generateCharacter);
 
 });

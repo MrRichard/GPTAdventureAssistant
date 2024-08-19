@@ -8,6 +8,7 @@ import random
 import string
 import json
 from datetime import datetime
+from utilities.PromptGen import PromptGeneration
 
 def init_routes(app):
     
@@ -33,7 +34,6 @@ def init_routes(app):
             data = request.get_json()
             api_key = data.get('api_key')
             app.config['OPENAI_API_KEY'] = api_key
-            print(app.config['OPENAI_API_KEY'])
             return jsonify({'success': True})
 
         except Exception as e:
@@ -184,7 +184,7 @@ def init_routes(app):
         prompt = (f"We are requesting a small accent image.\n\n"
                 f"Context: {image_context}\n"
                 f"Style [IMPORTANT]: {image_style}\n"
-                f"Please take into account the Context and Style and render for this scene: {transcription}."
+                f"Please take into account the Context and Style and render for this scene, character, or place: {transcription}."
                 )
 
         return prompt
@@ -243,4 +243,21 @@ def init_routes(app):
             )
         return jsonify({'success': True})
         
-    
+    @app.route('/character_generate', methods=['GET'])
+    def character_generate():
+        
+        # try:
+        # Assuming your PromptGeneration class uses the structure below
+        prompt_gen = PromptGeneration()
+        character_name,physical_description,personality = prompt_gen.create_npc()
+        print(f"Creating {character_name}")
+        
+        return jsonify({
+            'physical_description': physical_description,
+            'personality': personality
+        }), 200
+
+        # except ValueError as ve:
+        #     return jsonify({'error': str(ve)}), 400
+        # except Exception as e:
+        #     return jsonify({'error': str(e)}), 500
