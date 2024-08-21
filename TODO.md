@@ -18,12 +18,10 @@ This product should aim to:
 - Be system agnositic
 - Be useful for group or solo play
 - Be fun to use, easy to figure out, and extremely customizable
-- Be free to distribute and 
+- Be free to distribute and use
 
 ### TODO:
+- See if location gen can create actual MAPS
 - Character and Place directories scan on start
 - New characters and places also saved in these directories
 - ALL prompt generation should search for characters / places defined in the files. Those descriptions should be included in the prompt.
-- Generating new characters - INPROGRESS. Currently very bland. Needs to have a "Generating" indicator.
-- Generating new places
-- "Look at this map" Situational sidequest encounter - based on initial tests, this is "video-gamey" and kinda sucks

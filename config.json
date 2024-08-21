@@ -1,7 +1,7 @@
 {
-    "general_sytem_context": "You are an AI Assistant Dungeon master. Your role is to aid the DM with the creation of content for an RPG game.",
+    "general_system_context": "You are an AI Assistant Dungeon master. Your role is to aid the DM with the creation of content for an RPG game.",
     "general_world_context": "This game takes place on the continent of Endolyn, a fantasy realm and setting for a OSR DnD campaign. The world is a bit gritty. Elves do not exist in this world. Humans, Tieflings, and Halfings are most likely. While magic exists, it is not common. The world is dominated by humans who live a life similar to medieval europe or byzantium rome.",
-    "image_context": "Fantasy artwork for an old-school, first-edition, table-top role playing game",
+    "image_context": "1st edition style-artwork for an old-school, first-edition, table-top role playing game",
     "image_style": "black and white line contour illustration with warm paper background. high degree of realism. the images should always be good representations with lots of details and nuance. Never any text or characters. No framing that indicates medium, illuimination, or background workspace",
     "image_size": "1024x1024",
     "default_font": "Arial",

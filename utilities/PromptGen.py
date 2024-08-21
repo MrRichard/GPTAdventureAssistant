@@ -33,17 +33,56 @@ class PromptGeneration:
         
         return character_name, description, personality
 
-    def _generate_messages(self, request_type):
-        if request_type not in ["city_overview", "meet_character", "discover_place", "random_encounter"]:
+    def create_setting(self, placeName, shortDescription, areaSize='small'):
+        
+        # Validate areaSize input
+        if areaSize not in ["small", "large"]:
+            raise ValueError("Unsupported area size! Choose from 'small' or 'large'.")
+
+        # Build detailed prompt
+        if areaSize == 'large':
+            messages = self._generate_messages('location_overview', seed_text=shortDescription)
+        elif areaSize == 'small':
+            messages = self._generate_messages('discover_place', seed_text=shortDescription)
+
+        # Query Chat Completion
+        response = self._generate_GPT(messages)
+
+        wanted_results = ["long_description", "secrets"]
+        response_dict = json.loads(response)
+
+        # Ensure required keys exist in the response
+        for key in wanted_results:
+            if key not in response_dict:
+                raise KeyError(f"Missing key in the response: {key}")
+
+        long_description = response_dict.get("long_description")
+        secrets = response_dict.get("secrets")
+
+        return placeName, long_description, secrets
+
+    def _generate_messages(self, request_type, seed_text=''):
+        
+        if request_type not in ["location_overview", "meet_character", "discover_place", "random_encounter"]:
             raise ValueError("Unsupported request type!")
 
         messages = None
-        if request_type == "city_overview":
-            # Implement the prompt generation for city_overview
-            pass
+        if request_type == "location_overview":
+            messages = [
+            {"role": "system", "content": f"{self.config.get('general_system_context', '')}"},
+            {"role": "user", "content": (
+                f"Using the following general context of the world: {self.config.get('general_world_context', '')}, "
+                f"Please describe a setting with the following details:\n\n"
+                f"Short Description: {seed_text}\n"
+                f"Area Size: Larger, such as a city, valley, farming village, or cavern system.\n\n"
+                "Provide a long description of the place, including notable landmarks, general atmosphere, and any important features. Focus on the area and avoid mentioning surrounding areas or landmarks "
+                "Additionally, describe any secrets or hidden aspects of this place that would be known only to a few or discovered through exploration.\n\n"
+                "VERY IMPORTANT: Output the data as text blocks formatted as JSON with ONLY the following keys: place_name, long_description, secrets, for example: { \"long_description\": \"\",\"secrets\": \"\"}"
+            )}
+            ]
         elif request_type == "meet_character":
             messages = [
-                {"role": "system", "content": f"{self.config.get('general_sytem_context','')}"},
+                {"role": "system", "content": f"{self.config.get('general_system_context','')}"},
                 {"role": "user", "content": (
                     f"Using the following general context of the world: {self.config.get('general_world_context','')}, "
                     "Please describe a new NPC character in this world. This person is likely a normal person of average looks and wit, not a hero or heroic character.\n\n"
@@ -53,8 +92,18 @@ class PromptGeneration:
                 )},
             ]
         elif request_type == "discover_place":
-            # Implement the prompt generation for discover_place
-            pass
+            messages = [
+            {"role": "system", "content": f"{self.config.get('general_system_context', '')}"},
+            {"role": "user", "content": (
+                f"Using the following general context of the world: {self.config.get('general_world_context', '')}, "
+                f"Please describe a setting with the following details:\n\n"
+                f"Short Description: {seed_text}\n"
+                f"Area Size: Smaller, such as a tavern, a shallow cave, or a grassy clearing in a forest.\n\n"
+                "Provide a long description of the place, including notable landmarks, general atmosphere, and any important features. Avoid using any town or street names. Focus on the immediate scene, not the surrounding locale."
+                "Additionally, describe any secrets or hidden aspects of this place that would be known only to a few or discovered through exploration.\n\n"
+                "VERY IMPORTANT: Output the data as text blocks formatted as JSON with ONLY the following keys: place_name, long_description, secrets, for example: { \"long_description\": \"\",\"secrets\": \"\"}"
+            )}
+            ]
         elif request_type == "random_encounter":
             # Implement the prompt generation for random_encounter
             pass

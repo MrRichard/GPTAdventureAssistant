@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const recordButton = document.getElementById('record-button');
     const oracleButton = document.getElementById('oracle-button');
     const characterButton = document.getElementById('create-npc-button')
+    const settingButton = document.getElementById('create-setting-button')
 
     let mediaRecorder; // we will assign MediaRecorder object to this
     let audioChunks = []; // array for storing the recorded audio data
@@ -862,7 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // https://celebsonsandwiches.com/products/dr-steve-brule
                 generatedImagePath = 'static/images/dr_brule.jpg'; // Fallback image path
             }
-            
+
             make_message_bubble(timestamp, personality, '', true);
             make_message_bubble(timestamp, physical_description, generatedImagePath, false);
         } catch (error) {
@@ -872,5 +873,127 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     characterButton.addEventListener('click', generateCharacter);
+
+    function showSettingsDialog() {
+        // Create a dialog box
+        const dialog = document.createElement('div');
+        dialog.style.position = 'fixed';
+        dialog.style.top = '50%';
+        dialog.style.left = '50%';
+        dialog.style.transform = 'translate(-50%, -50%)';
+        dialog.style.padding = '20px';
+        dialog.style.backgroundColor = 'white';
+        dialog.style.border = '1px solid black';
+        dialog.style.zIndex = '1000'; // Ensure the dialog appears above other content
+        dialog.style.minWidth = '200px';
+        dialog.style.minHeight = '300px';
+
+        // Create and set up the form elements
+        const form = document.createElement('form');
+
+        const nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Name of the place:';
+        form.appendChild(nameLabel);
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.name = 'placeName';
+        nameInput.style.width = '100%';
+        form.appendChild(nameInput);
+
+        const descLabel = document.createElement('label');
+        descLabel.textContent = 'Short description:';
+        form.appendChild(descLabel);
+
+        const descTextArea = document.createElement('textarea');
+        descTextArea.name = 'shortDescription';
+        descTextArea.style.width = '100%';
+        descTextArea.style.minHeight = '100px';
+        form.appendChild(descTextArea);
+
+        const sizeLabel = document.createElement('label');
+        sizeLabel.textContent = 'Area size:';
+        form.appendChild(sizeLabel);
+
+        const smallAreaLabel = document.createElement('label');
+        smallAreaLabel.textContent = 'Small area';
+        form.appendChild(smallAreaLabel);
+
+        const smallAreaRadio = document.createElement('input');
+        smallAreaRadio.type = 'radio';
+        smallAreaRadio.name = 'areaSize';
+        smallAreaRadio.value = 'small';
+        form.appendChild(smallAreaRadio);
+
+        const largeAreaLabel = document.createElement('label');
+        largeAreaLabel.textContent = 'Large area';
+        form.appendChild(largeAreaLabel);
+
+        const largeAreaRadio = document.createElement('input');
+        largeAreaRadio.type = 'radio';
+        largeAreaRadio.name = 'areaSize';
+        largeAreaRadio.value = 'large';
+        form.appendChild(largeAreaRadio);
+
+        dialog.appendChild(form);
+
+        // Accept button
+        const acceptButton = document.createElement('button');
+        acceptButton.textContent = 'Accept';
+        acceptButton.addEventListener('click', async (event) => {
+            event.preventDefault(); // Prevent form submission
+            const placeName = nameInput.value.trim();
+            const shortDescription = descTextArea.value.trim();
+            const areaSize = form.areaSize.value;
+
+            if (placeName && shortDescription && areaSize) {
+                // Perform necessary actions with the form data
+                //console.log({ placeName, shortDescription, areaSize });
+
+                try {
+                    const response = await fetch('/generate_location', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ placeName, shortDescription, areaSize }),
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        // Create a message bubble with the public information
+                        let now = new Date();
+                        let timestamp = now.toLocaleString();
+                        
+                        make_message_bubble(timestamp,`Secret: ${data.secrets}`,'', true);                        
+                        make_message_bubble(timestamp,`Place: ${data.placeName}\n\nDescription: ${data.longDescription}\n`, false);
+
+                    } else {
+                        console.error('Failed to fetch data from the server.');
+                    }
+                } catch (error) {
+                    console.error('Error during fetch:', error);
+                }
+
+                document.body.removeChild(dialog);
+            }
+        });
+        dialog.appendChild(acceptButton);
+
+        // Cancel button
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'Cancel';
+        cancelButton.addEventListener('click', () => {
+            document.body.removeChild(dialog);
+        });
+        dialog.appendChild(cancelButton);
+
+        document.body.appendChild(dialog);
+        setTimeout(() => nameInput.focus(), 0); // Timeout to ensure dialog is in the DOM
+    }
+
+    settingButton.addEventListener('click', showSettingsDialog);
+
 
 });

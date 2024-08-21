@@ -246,18 +246,42 @@ def init_routes(app):
     @app.route('/character_generate', methods=['GET'])
     def character_generate():
         
-        # try:
-        # Assuming your PromptGeneration class uses the structure below
-        prompt_gen = PromptGeneration()
-        character_name,physical_description,personality = prompt_gen.create_npc()
-        print(f"Creating {character_name}")
-        
-        return jsonify({
-            'physical_description': physical_description,
-            'personality': personality
-        }), 200
+        try:
+            # Assuming your PromptGeneration class uses the structure below
+            prompt_gen = PromptGeneration()
+            character_name,physical_description,personality = prompt_gen.create_npc()
+            print(f"Creating {character_name}")
+            
+            return jsonify({
+                'physical_description': physical_description,
+                'personality': personality
+            }), 200
 
-        # except ValueError as ve:
-        #     return jsonify({'error': str(ve)}), 400
-        # except Exception as e:
-        #     return jsonify({'error': str(e)}), 500
+        except ValueError as ve:
+            return jsonify({'error': str(ve)}), 400
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+        
+    @app.route('/generate_location', methods=['POST'])
+    def generate_location():
+        
+        data=request.json
+        
+        try: 
+            placeName = data['placeName']
+            shortDescription = data['shortDescription']
+            areaSize = data['areaSize']
+            prompt_gen = PromptGeneration()
+            print(data)
+            placeName, longDescription, secrets = prompt_gen.create_setting(placeName, shortDescription, areaSize)
+            
+            return jsonify({
+                'placeName': placeName,
+                'longDescription': longDescription,
+                'secrets' : secrets
+            }), 200
+
+        except ValueError as ve:
+            return jsonify({'error': str(ve)}), 400
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
