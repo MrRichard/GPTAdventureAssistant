@@ -483,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     oracleButton.addEventListener('click', consultOracle);
 
-    function make_message_bubble(timestamp, transcription, imagePath = null, hidden = false) {
+    function make_message_bubble(timestamp, transcription, imagePath = null, hidden = false, img_gen_mode='') {
         // Create a div to hold the new message bubble with the transcription
         let messageBubble = document.createElement('div');
         messageBubble.className = 'message-bubble';
@@ -564,11 +564,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (imagePath) {
                 submitButton.textContent = 'Regen Image';
             } else {
-                submitButton.textContent = 'Generate Image';
+                // adding varying button texts for different bubble types
+                if (img_gen_mode=='person') {
+                    submitButton.textContent = 'Portrait';
+                } else if (img_gen_mode=='place') {
+                    submitButton.textContent = 'Map';
+                } else {
+                    submitButton.textContent = 'Generate Image';
+                }
             }
             submitButton.addEventListener('click', async () => {
                 let formData = new FormData();
                 formData.append('text', transcription);
+                // adding input for specific types of images
+                if (img_gen_mode != ''){
+                    formData.append('object', img_gen_mode);
+                }
                 submitButton.textContent = 'Generating Image';
                 submitButton.disabled = true;
                 try {
@@ -685,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success && data.data) {
                 const sessionData = data.data;
                 sessionData.forEach(item => {
-                    make_message_bubble(item.timestamp, item.transcription, item.imagePath);
+                    make_message_bubble(item.timestamp, item.transcription, imagePath=item.imagePath);
                 });
             }
         }).catch(error => {
@@ -850,6 +861,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let generatedImagePath;
             let formData = new FormData();
             formData.append('text', physical_description);
+            formData.append('object', 'person');
+
             try {
                 const imageResponse = await fetch('/generate_image', {
                     method: 'POST',
@@ -864,12 +877,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 generatedImagePath = 'static/images/dr_brule.jpg'; // Fallback image path
             }
 
-            make_message_bubble(timestamp, personality, '', true);
-            make_message_bubble(timestamp, physical_description, generatedImagePath, false);
+            make_message_bubble(timestamp, personality, imagePath='', hidden=true);
+            make_message_bubble(timestamp, physical_description, imagePath=generatedImagePath, hidden=false, img_gen_mode='person');
         } catch (error) {
             console.error('Failed to generate character:', error);
             generatedImagePath = 'static/images/dr_brule.jpg';
-            make_message_bubble(timestamp, 'Failed to generate character, dude.', generatedImagePath, false);
+            make_message_bubble(timestamp, 'Failed to generate character, dude.', generatedImagePath, hidden=false);
         }
     }
     characterButton.addEventListener('click', generateCharacter);
@@ -966,8 +979,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         let now = new Date();
                         let timestamp = now.toLocaleString();
                         
-                        make_message_bubble(timestamp,`Secret: ${data.secrets}`,'', true);                        
-                        make_message_bubble(timestamp,`Place: ${data.placeName}\n\nDescription: ${data.longDescription}\n`, false);
+                        make_message_bubble(timestamp,`Secret: ${data.secrets}`, imagePath='', hidden=true, img_gen_mode='');                        
+                        make_message_bubble(timestamp,`Place: ${data.placeName}\n\nDescription: ${data.longDescription}\n`, imagePath='', hidden=false, img_gen_mode='place');
 
                     } else {
                         console.error('Failed to fetch data from the server.');

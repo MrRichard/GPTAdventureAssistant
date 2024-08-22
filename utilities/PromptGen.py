@@ -116,7 +116,7 @@ class PromptGeneration:
             model="gpt-4o-mini",
             messages=messages,
             temperature=1,
-            max_tokens=700,
+            max_tokens=600,
             top_p=1,
             frequency_penalty=0,
             presence_penalty=0,

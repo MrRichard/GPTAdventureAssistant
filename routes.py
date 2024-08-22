@@ -143,6 +143,9 @@ def init_routes(app):
         try:
             # Retrieve the file from the request using the key 'file'
             transcription = request.form['text']
+            
+            image_object = request.form.get('object', '')
+            
 
             # Check if the filename is empty and raise an error if it is
             if transcription == '':
@@ -153,7 +156,10 @@ def init_routes(app):
         
         client = OpenAI(api_key = app.config['OPENAI_API_KEY'])
         
-        image_prompt = generate_prompt(app.config['image_context'], app.config['image_style'], transcription)
+        if image_object:
+            image_prompt = generate_prompt(app.config['image_context'], app.config['image_style'], transcription, image_object)    
+        else:
+            image_prompt = generate_prompt(app.config['image_context'], app.config['image_style'], transcription)
 
         response = client.images.generate(
             model="dall-e-3",
@@ -180,12 +186,36 @@ def init_routes(app):
         # Return the local file path
         return jsonify({'image_path': local_file_path}), 200
     
-    def generate_prompt(image_context, image_style, transcription):
-        prompt = (f"We are requesting a small accent image.\n\n"
+    def generate_prompt(image_context, image_style, transcription, object=''):
+        
+        if object == "person":
+            print("Printing in PERSON mode")
+            prompt = (f"We are requesting a small accent image.\n\n"
                 f"Context: {image_context}\n"
                 f"Style [IMPORTANT]: {image_style}\n"
-                f"Please take into account the Context and Style and render for this scene, character, or place: {transcription}."
+                f"Please take into account the Context and Style and render a portrait of this character: {transcription}."
                 )
+        elif object == "place":
+            print("Printing in PLACE mode")
+            prompt = (f"We are requesting a small accent image.\n\n"
+                f"Context: {image_context}\n"
+                f"Style [IMPORTANT]: {image_style}\n"
+                f"Please take into account the Context and Style and render an illustrated fantasy isometric map matching this description: {transcription}."
+                )
+        elif object == "thing":
+            print("Printing in THING mode")
+            prompt = (f"We are requesting a small accent image.\n\n"
+                f"Context: {image_context}\n"
+                f"Style [IMPORTANT]: {image_style}\n"
+                f"Please take into account the Context and Style and render an detailed diagram of this object: {transcription}."
+                )
+        else:
+            print("Printing in GENERAL mode")    
+            prompt = (f"We are requesting a small accent image.\n\n"
+                    f"Context: {image_context}\n"
+                    f"Style [IMPORTANT]: {image_style}\n"
+                    f"Please take into account the Context and Style and render for this scene, character, or place: {transcription}."
+                    )
 
         return prompt
     
