@@ -1,10 +1,10 @@
 prompt*
-tmp_recordings/
+tmp_recordings/*.wav
 .venv/
 __pycache__/
 .gpteng/
-static/images/maps/
-static/images/saved_images/
+static/images/maps/*.png
+static/images/saved_images/*.png
 logs/*.json
 run.sh
 Structure
